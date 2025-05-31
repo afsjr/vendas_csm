@@ -11,12 +11,13 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { ArrowLeft, Check } from "lucide-react"
 import Link from "next/link"
 
 export default function NewLeadPage() {
   const router = useRouter()
+  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: "",

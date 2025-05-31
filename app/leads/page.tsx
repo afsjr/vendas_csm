@@ -111,10 +111,24 @@ export default function LeadsPage() {
 
       {!isLoading && filteredLeads.length === 0 && !error && (
         <div className="text-center py-12">
-          <p className="text-muted-foreground">Nenhum lead encontrado com os filtros aplicados.</p>
-          <Button variant="outline" onClick={handleClearFilters} className="mt-4">
-            Limpar Filtros
-          </Button>
+          {leads.length === 0 ? (
+            <>
+              <p className="text-muted-foreground mb-4">Nenhum lead cadastrado ainda.</p>
+              <Button asChild>
+                <Link href="/leads/novo">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Criar Primeiro Lead
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-muted-foreground">Nenhum lead encontrado com os filtros aplicados.</p>
+              <Button variant="outline" onClick={handleClearFilters} className="mt-4">
+                Limpar Filtros
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>

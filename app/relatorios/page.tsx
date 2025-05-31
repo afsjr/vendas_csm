@@ -3,12 +3,13 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { FileDown, Printer } from "lucide-react"
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"]
 
 export default function RelatoriosPage() {
+  const { toast } = useToast()
   const [reportType, setReportType] = useState("matriculas")
   const [periodFilter, setPeriodFilter] = useState("month")
   const [courseFilter, setCourseFilter] = useState("all")
@@ -46,7 +47,7 @@ export default function RelatoriosPage() {
       title: "Exportando relatório...",
       description: "O arquivo será baixado em breve.",
     })
-    
+
     // Simulação de exportação
     setTimeout(() => {
       toast({
@@ -61,7 +62,7 @@ export default function RelatoriosPage() {
       title: "Preparando impressão...",
       description: "A janela de impressão será aberta em breve.",
     })
-    
+
     // Simulação de impressão
     setTimeout(() => {
       window.print()
@@ -86,7 +87,7 @@ export default function RelatoriosPage() {
           </Button>
         </div>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Filtros</CardTitle>
@@ -105,11 +106,29 @@ export default function RelatoriosPage() {
                 <SelectItem value="year">Anual</SelectItem>
               </SelectContent>
             </Select>
-            
+
             <Select value={courseFilter} onValueChange={setCourseFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Curso" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os cursos</SelectItem>
-                <SelectItem value="tecnico">Técnico</SelectItem\
+                <SelectItem value="tecnico">Técnico</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={representativeFilter} onValueChange={setRepresentativeFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Representante" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os representantes</SelectItem>
+                <SelectItem value="specific">Representante específico</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

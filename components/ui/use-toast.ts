@@ -137,6 +137,15 @@ function dispatch(action: Action) {
   })
 }
 
+function toast(props: ToastProps) {
+  const id = genId()
+  dispatch({
+    type: "ADD_TOAST",
+    toast: { ...props, id, open: true },
+  })
+  return id
+}
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState)
 
@@ -150,15 +159,6 @@ function useToast() {
     }
   }, [state])
 
-  const toast = (props: ToastProps) => {
-    const id = genId()
-    dispatch({
-      type: "ADD_TOAST",
-      toast: { ...props, id, open: true },
-    })
-    return id
-  }
-
   return {
     ...state,
     toast,
@@ -166,4 +166,4 @@ function useToast() {
   }
 }
 
-export { useToast }
+export { useToast, toast }

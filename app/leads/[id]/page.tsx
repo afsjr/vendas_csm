@@ -26,14 +26,24 @@ export default function LeadDetailPage() {
 
   useEffect(() => {
     async function fetchLead() {
+      if (!leadId) {
+        setError("ID do lead não fornecido")
+        setIsLoading(false)
+        return
+      }
+
       try {
         setIsLoading(true)
         const data = await getLead(leadId)
         setLead(data)
         setError(null)
-      } catch (err) {
+      } catch (err: any) {
         console.error("Error fetching lead:", err)
-        setError("Falha ao carregar dados do lead. Por favor, tente novamente.")
+        if (err.message.includes("not found")) {
+          setError("Lead não encontrado. Pode ter sido removido ou o ID está incorreto.")
+        } else {
+          setError("Falha ao carregar dados do lead. Por favor, tente novamente.")
+        }
       } finally {
         setIsLoading(false)
       }

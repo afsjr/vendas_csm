@@ -11,6 +11,9 @@ interface LeadCardProps {
 }
 
 export function LeadCard({ lead }: LeadCardProps) {
+  // Debug log to help identify issues
+  console.log("LeadCard - Lead ID:", lead.id, "Lead Name:", lead.name)
+
   return (
     <Card className="animate-fade-in hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
@@ -59,7 +62,7 @@ export function LeadCard({ lead }: LeadCardProps) {
               <Mail className="h-4 w-4" />
             </Button>
             <Button size="sm" asChild>
-              <Link href={`/leads/${lead.id}`}>Ver Detalhes</Link>
+              <Link href={`/leads/${encodeURIComponent(lead.id)}`}>Ver Detalhes</Link>
             </Button>
           </div>
         </div>

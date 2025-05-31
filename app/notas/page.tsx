@@ -13,7 +13,7 @@ import type { Grade, Matriculation } from "@/lib/types"
 import { formatDate } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Search, FileDown, BarChart } from "lucide-react"
-import { toast } from "@/components/ui/toast"
+import { useToast } from "@/components/ui/use-toast"
 import {
   Dialog,
   DialogContent,
@@ -25,6 +25,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 
 export default function NotasPage() {
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [matriculationFilter, setMatriculationFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")

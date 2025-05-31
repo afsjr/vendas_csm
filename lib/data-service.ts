@@ -124,20 +124,32 @@ export async function getLead(id: string): Promise<Lead> {
   if (!supabase) {
     // Fallback to mock data
     const lead = mockLeads.find((l) => l.id === id)
-    if (!lead) throw new Error("Lead not found")
+    if (!lead) {
+      // Return a more descriptive error or create a default lead
+      console.warn(`Lead with id ${id} not found in mock data`)
+      throw new Error(`Lead with id ${id} not found`)
+    }
     return transformLeadFromDB(lead)
   }
 
   try {
     const { data, error } = await supabase.from("leads").select("*").eq("id", id).single()
 
-    if (error) throw error
+    if (error) {
+      if (error.code === "PGRST116") {
+        throw new Error(`Lead with id ${id} not found`)
+      }
+      throw error
+    }
 
     return transformLeadFromDB(data)
   } catch (error) {
-    console.warn("Supabase error, falling back to mock data:", error)
+    console.warn("Supabase error:", error)
+    // Try fallback to mock data
     const lead = mockLeads.find((l) => l.id === id)
-    if (!lead) throw new Error("Lead not found")
+    if (!lead) {
+      throw new Error(`Lead with id ${id} not found`)
+    }
     return transformLeadFromDB(lead)
   }
 }

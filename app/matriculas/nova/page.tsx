@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { mockCourses } from "@/lib/mock-data"
 import { formatCurrency } from "@/lib/utils"
-import { toast } from "@/components/ui/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { AlertCircle, Check, FileText } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
@@ -30,6 +30,7 @@ const calculateAge = (birthDate: Date): number => {
 
 export default function MatriculasNovaPage() {
   const router = useRouter()
+  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     studentName: "",
