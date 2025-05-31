@@ -1,14 +1,19 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { DialogTrigger } from "@/components/ui/dialog"
+
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { mockGrades, mockMatriculations } from "@/lib/mock-data"
-import { Badge } from "@/components/ui/badge"
-import { toast } from "@/components/ui/use-toast"
+import { getGrades, getMatriculations, createGrade } from "@/lib/data-service"
+import type { Grade, Matriculation } from "@/lib/types"
+import { formatDate } from "@/lib/utils"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Plus, Search, FileDown, BarChart } from "lucide-react"
+import { toast } from "@/components/ui/toast"
 import {
   Dialog,
   DialogContent,
@@ -16,9 +21,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
-import { Plus, Search, FileDown, BarChart } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export default function NotasPage() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -33,8 +37,32 @@ export default function NotasPage() {
     status: "em_andamento",
   })
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [grades, setGrades] = useState<Grade[]>([])
+  const [matriculations, setMatriculations] = useState<Matriculation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredGrades = mockGrades.filter((grade) => {
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        setIsLoading(true)
+        const [gradesData, matriculationsData] = await Promise.all([getGrades(), getMatriculations()])
+        setGrades(gradesData)
+        setMatriculations(matriculationsData)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching data:", err)
+        setError("Falha ao carregar dados. Por favor, tente novamente.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const filteredGrades = grades.filter((grade) => {
     const matchesSearch =
       grade.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       grade.subjectName.toLowerCase().includes(searchTerm.toLowerCase())
@@ -52,7 +80,7 @@ export default function NotasPage() {
     }))
   }
 
-  const handleSaveGrade = () => {
+  const handleSaveGrade = async () => {
     // Validação básica
     if (!newGrade.matriculationId || !newGrade.subjectName || !newGrade.grade) {
       toast({
@@ -63,23 +91,60 @@ export default function NotasPage() {
       return
     }
 
-    // Simulação de salvamento
-    toast({
-      title: "Nota salva com sucesso!",
-      description: "A nota foi registrada no sistema.",
-    })
+    try {
+      setIsSubmitting(true)
 
-    setIsDialogOpen(false)
+      // Find the matriculation to get student and course details
+      const matriculation = matriculations.find((m) => m.id === newGrade.matriculationId)
 
-    // Reset do formulário
-    setNewGrade({
-      matriculationId: "",
-      subjectName: "",
-      period: "",
-      grade: "",
-      maxGrade: "10",
-      status: "em_andamento",
-    })
+      if (!matriculation) {
+        throw new Error("Matrícula não encontrada")
+      }
+
+      // Create the grade
+      const savedGrade = await createGrade({
+        matriculationId: newGrade.matriculationId,
+        studentId: matriculation.studentId,
+        studentName: matriculation.studentName,
+        courseId: matriculation.courseId,
+        courseName: matriculation.courseName,
+        subjectName: newGrade.subjectName,
+        period: newGrade.period,
+        grade: Number(newGrade.grade),
+        maxGrade: Number(newGrade.maxGrade),
+        status: newGrade.status,
+        date: new Date(),
+      })
+
+      // Add the new grade to the state
+      setGrades((prev) => [savedGrade, ...prev])
+
+      toast({
+        title: "Nota salva com sucesso!",
+        description: "A nota foi registrada no sistema.",
+      })
+
+      setIsDialogOpen(false)
+
+      // Reset do formulário
+      setNewGrade({
+        matriculationId: "",
+        subjectName: "",
+        period: "",
+        grade: "",
+        maxGrade: "10",
+        status: "em_andamento",
+      })
+    } catch (err) {
+      console.error("Error saving grade:", err)
+      toast({
+        title: "Erro ao salvar nota",
+        description: "Ocorreu um erro ao salvar a nota. Tente novamente.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -157,7 +222,7 @@ export default function NotasPage() {
                       <SelectValue placeholder="Selecione uma matrícula" />
                     </SelectTrigger>
                     <SelectContent>
-                      {mockMatriculations.map((matriculation) => (
+                      {matriculations.map((matriculation) => (
                         <SelectItem key={matriculation.id} value={matriculation.id}>
                           {matriculation.studentName} - {matriculation.courseName}
                         </SelectItem>
@@ -227,10 +292,12 @@ export default function NotasPage() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} disabled={isSubmitting}>
                   Cancelar
                 </Button>
-                <Button onClick={handleSaveGrade}>Salvar Nota</Button>
+                <Button onClick={handleSaveGrade} disabled={isSubmitting}>
+                  {isSubmitting ? "Salvando..." : "Salvar Nota"}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -269,7 +336,7 @@ export default function NotasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as matrículas</SelectItem>
-                {mockMatriculations.map((matriculation) => (
+                {matriculations.map((matriculation) => (
                   <SelectItem key={matriculation.id} value={matriculation.id}>
                     {matriculation.studentName} - {matriculation.courseName}
                   </SelectItem>
@@ -292,45 +359,60 @@ export default function NotasPage() {
         </CardContent>
       </Card>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4">
+          <p>{error}</p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="mt-2">
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead>Disciplina</TableHead>
-                  <TableHead>Período</TableHead>
-                  <TableHead className="text-center">Nota</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center">Data</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredGrades.length > 0 ? (
-                  filteredGrades.map((grade) => (
-                    <TableRow key={grade.id}>
-                      <TableCell className="font-medium">{grade.studentName}</TableCell>
-                      <TableCell>{grade.courseName}</TableCell>
-                      <TableCell>{grade.subjectName}</TableCell>
-                      <TableCell>{grade.period}</TableCell>
-                      <TableCell className="text-center">
-                        {grade.grade} / {grade.maxGrade}
-                      </TableCell>
-                      <TableCell className="text-center">{getStatusBadge(grade.status)}</TableCell>
-                      <TableCell className="text-center">{new Date(grade.date).toLocaleDateString("pt-BR")}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
+            {isLoading ? (
+              <div className="p-4">
+                <Skeleton className="h-[300px] w-full rounded-xl" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">
-                      Nenhuma nota encontrada com os filtros aplicados.
-                    </TableCell>
+                    <TableHead>Aluno</TableHead>
+                    <TableHead>Curso</TableHead>
+                    <TableHead>Disciplina</TableHead>
+                    <TableHead>Período</TableHead>
+                    <TableHead className="text-center">Nota</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Data</TableHead>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredGrades.length > 0 ? (
+                    filteredGrades.map((grade) => (
+                      <TableRow key={grade.id}>
+                        <TableCell className="font-medium">{grade.studentName}</TableCell>
+                        <TableCell>{grade.courseName}</TableCell>
+                        <TableCell>{grade.subjectName}</TableCell>
+                        <TableCell>{grade.period}</TableCell>
+                        <TableCell className="text-center">
+                          {grade.grade} / {grade.maxGrade}
+                        </TableCell>
+                        <TableCell className="text-center">{getStatusBadge(grade.status)}</TableCell>
+                        <TableCell className="text-center">{formatDate(grade.date)}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-4">
+                        Nenhuma nota encontrada com os filtros aplicados.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>

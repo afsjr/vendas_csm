@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { mockLeads } from "@/lib/mock-data"
 import { LeadDetailHeader } from "@/components/leads/lead-detail-header"
 import { LeadContactInfo } from "@/components/leads/lead-contact-info"
 import { LeadCourseInfo } from "@/components/leads/lead-course-info"
@@ -12,30 +11,35 @@ import { LeadFinancialInfo } from "@/components/leads/lead-financial-info"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import type { Lead } from "@/lib/types"
+import { getLead } from "@/lib/data-service"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
   const [lead, setLead] = useState<Lead | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("contact")
 
   const leadId = params.id as string
 
   useEffect(() => {
-    // Simular carregamento de dados
-    const loadLead = async () => {
-      setIsLoading(true)
-
-      // Simular delay de rede
-      await new Promise((resolve) => setTimeout(resolve, 300))
-
-      const foundLead = mockLeads.find((l) => l.id === leadId)
-      setLead(foundLead || null)
-      setIsLoading(false)
+    async function fetchLead() {
+      try {
+        setIsLoading(true)
+        const data = await getLead(leadId)
+        setLead(data)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching lead:", err)
+        setError("Falha ao carregar dados do lead. Por favor, tente novamente.")
+      } finally {
+        setIsLoading(false)
+      }
     }
 
-    loadLead()
+    fetchLead()
   }, [leadId])
 
   const handleEdit = () => {
@@ -45,20 +49,36 @@ export default function LeadDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex-1 p-6">
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Carregando dados do lead...</p>
+      <div className="flex-1 p-6 space-y-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+        <Skeleton className="h-[50px] w-full rounded-xl mb-6" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Skeleton className="h-[300px] rounded-xl" />
+          <Skeleton className="h-[300px] rounded-xl" />
         </div>
       </div>
     )
   }
 
-  if (!lead) {
+  if (error || !lead) {
     return (
       <div className="flex-1 p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold">Lead não encontrado</h2>
-          <p className="text-muted-foreground mt-2">O lead que você está procurando não existe.</p>
+          <h2 className="text-2xl font-bold">{error || "Lead não encontrado"}</h2>
+          <p className="text-muted-foreground mt-2">
+            {error ? "Ocorreu um erro ao carregar os dados." : "O lead que você está procurando não existe."}
+          </p>
           <Button variant="outline" className="mt-4" asChild>
             <Link href="/leads">Voltar para a lista de leads</Link>
           </Button>

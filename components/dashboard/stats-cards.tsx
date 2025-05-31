@@ -1,36 +1,39 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Phone, DollarSign, FileText } from "lucide-react"
-import { mockLeads } from "@/lib/mock-data"
 import { formatCurrency } from "@/lib/utils"
 
-export function StatsCards() {
-  const totalLeads = mockLeads.length
-  const contactedLeads = mockLeads.filter((c) => c.status === "contatado").length
-  const interestedLeads = mockLeads.filter((c) => c.status === "interessado").length
-  const totalRevenue = mockLeads.reduce((sum, lead) => sum + lead.totalValue, 0)
+interface StatsCardsProps {
+  stats: {
+    totalLeads: number
+    contactedLeads: number
+    interestedLeads: number
+    totalRevenue: number
+  }
+}
 
-  const stats = [
+export function StatsCards({ stats }: StatsCardsProps) {
+  const statsItems = [
     {
       title: "Total de Leads",
-      value: totalLeads.toString(),
+      value: stats?.totalLeads?.toString() || "0",
       icon: Users,
       color: "text-blue-600",
     },
     {
       title: "Contatados",
-      value: contactedLeads.toString(),
+      value: stats?.contactedLeads?.toString() || "0",
       icon: Phone,
       color: "text-green-600",
     },
     {
       title: "Interessados",
-      value: interestedLeads.toString(),
+      value: stats?.interestedLeads?.toString() || "0",
       icon: FileText,
       color: "text-orange-600",
     },
     {
       title: "Receita Total",
-      value: formatCurrency(totalRevenue),
+      value: formatCurrency(stats?.totalRevenue || 0),
       icon: DollarSign,
       color: "text-purple-600",
     },
@@ -38,7 +41,7 @@ export function StatsCards() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat, index) => (
+      {statsItems.map((stat, index) => (
         <Card key={index} className="animate-fade-in">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>

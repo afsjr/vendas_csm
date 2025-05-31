@@ -1,34 +1,55 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { mockMatriculations } from "@/lib/mock-data"
 import { formatDate } from "@/lib/utils"
 import { Plus, Search } from "lucide-react"
 import Link from "next/link"
+import { getMatriculations } from "@/lib/data-service"
+import type { Matriculation } from "@/lib/types"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function MatriculasPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [paymentFilter, setPaymentFilter] = useState("all")
+  const [matriculations, setMatriculations] = useState<Matriculation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredMatriculations = useMemo(() => {
-    return mockMatriculations.filter((matriculation) => {
-      const matchesSearch =
-        matriculation.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        matriculation.courseName.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    async function fetchMatriculations() {
+      try {
+        setIsLoading(true)
+        const data = await getMatriculations()
+        setMatriculations(data)
+        setError(null)
+      } catch (err) {
+        console.error("Error fetching matriculations:", err)
+        setError("Falha ao carregar matrículas. Por favor, tente novamente.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-      const matchesStatus = statusFilter === "all" || matriculation.status === statusFilter
-      const matchesPayment = paymentFilter === "all" || matriculation.paymentStatus === paymentFilter
+    fetchMatriculations()
+  }, [])
 
-      return matchesSearch && matchesStatus && matchesPayment
-    })
-  }, [searchTerm, statusFilter, paymentFilter])
+  const filteredMatriculations = matriculations.filter((matriculation) => {
+    const matchesSearch =
+      matriculation.studentName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      matriculation.courseName.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesStatus = statusFilter === "all" || matriculation.status === statusFilter
+    const matchesPayment = paymentFilter === "all" || matriculation.paymentStatus === paymentFilter
+
+    return matchesSearch && matchesStatus && matchesPayment
+  })
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -120,47 +141,62 @@ export default function MatriculasPage() {
         </CardContent>
       </Card>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-md p-4">
+          <p>{error}</p>
+          <Button variant="outline" onClick={() => window.location.reload()} className="mt-2">
+            Tentar novamente
+          </Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Aluno</TableHead>
-                  <TableHead>Curso</TableHead>
-                  <TableHead>Data de Matrícula</TableHead>
-                  <TableHead>Início do Curso</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
-                  <TableHead className="text-center">Pagamento</TableHead>
-                  <TableHead className="text-center">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMatriculations.length > 0 ? (
-                  filteredMatriculations.map((matriculation) => (
-                    <TableRow key={matriculation.id}>
-                      <TableCell className="font-medium">{matriculation.studentName}</TableCell>
-                      <TableCell>{matriculation.courseName}</TableCell>
-                      <TableCell>{formatDate(matriculation.enrollmentDate)}</TableCell>
-                      <TableCell>{formatDate(matriculation.startDate)}</TableCell>
-                      <TableCell className="text-center">{getStatusBadge(matriculation.status)}</TableCell>
-                      <TableCell className="text-center">{getPaymentBadge(matriculation.paymentStatus)}</TableCell>
-                      <TableCell className="text-center">
-                        <Button size="sm" variant="outline" asChild>
-                          <Link href={`/matriculas/${matriculation.id}`}>Ver Detalhes</Link>
-                        </Button>
+            {isLoading ? (
+              <div className="p-4">
+                <Skeleton className="h-[300px] w-full rounded-xl" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Aluno</TableHead>
+                    <TableHead>Curso</TableHead>
+                    <TableHead>Data de Matrícula</TableHead>
+                    <TableHead>Início do Curso</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Pagamento</TableHead>
+                    <TableHead className="text-center">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredMatriculations.length > 0 ? (
+                    filteredMatriculations.map((matriculation) => (
+                      <TableRow key={matriculation.id}>
+                        <TableCell className="font-medium">{matriculation.studentName}</TableCell>
+                        <TableCell>{matriculation.courseName}</TableCell>
+                        <TableCell>{formatDate(matriculation.enrollmentDate)}</TableCell>
+                        <TableCell>{formatDate(matriculation.startDate)}</TableCell>
+                        <TableCell className="text-center">{getStatusBadge(matriculation.status)}</TableCell>
+                        <TableCell className="text-center">{getPaymentBadge(matriculation.paymentStatus)}</TableCell>
+                        <TableCell className="text-center">
+                          <Button size="sm" variant="outline" asChild>
+                            <Link href={`/matriculas/${matriculation.id}`}>Ver Detalhes</Link>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-4">
+                        Nenhuma matrícula encontrada com os filtros aplicados.
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-4">
-                      Nenhuma matrícula encontrada com os filtros aplicados.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </CardContent>
       </Card>
